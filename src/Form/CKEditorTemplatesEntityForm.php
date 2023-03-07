@@ -3,8 +3,12 @@
 namespace Drupal\ckeditor_templates\Form;
 
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\File\FileSystemInterface;
+use Drupal\file\FileUsage\FileUsageInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
+use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -19,13 +23,36 @@ class CKEditorTemplatesEntityForm extends EntityForm {
    *
    * @var \Drupal\Core\File\FileSystemInterface
    */
-  protected $fileSystem;
+  protected FileSystemInterface $fileSystem;
 
   /**
-   * {@inheritdoc}
+   * Entity Type Manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  public function __construct(FileSystemInterface $file_system) {
+  protected $entityTypeManager;
+
+  /**
+   * The file usage service.
+   *
+   * @var \Drupal\file\FileUsage\FileUsageInterface
+   */
+  protected FileUsageInterface $fileUsage;
+
+  /**
+   * Constructs a new entity form.
+   *
+   * @param \Drupal\Core\File\FileSystemInterface $file_system
+   *   The file system service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The Entity type manager.
+   * @param \Drupal\file\FileUsage\FileUsageInterface $file_usage
+   *   The file usage service.
+   */
+  public function __construct(FileSystemInterface $file_system, EntityTypeManagerInterface $entity_type_manager, FileUsageInterface $file_usage) {
     $this->fileSystem = $file_system;
+    $this->entityTypeManager = $entity_type_manager;
+    $this->fileUsage = $file_usage;
   }
 
   /**
@@ -33,7 +60,9 @@ class CKEditorTemplatesEntityForm extends EntityForm {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('file_system')
+      $container->get('file_system'),
+      $container->get('entity_type.manager'),
+      $container->get('file.usage')
     );
   }
 
@@ -121,6 +150,28 @@ class CKEditorTemplatesEntityForm extends EntityForm {
     $status = $template->save();
 
     if ($status) {
+
+      // Sets the image as permanent.
+      try {
+        $thumb = $form_state->getValue('thumb');
+        if (!empty($thumb)) {
+          $thumb = reset($thumb);
+
+          /** @var  Drupal\file\Entity\File $file */
+          $file = $this->entityTypeManager->getStorage('file')->load($thumb);
+          if (isset($file)) {
+            $file->setPermanent();
+            $file->save();
+
+            // Add the file to the usage calculation.
+            $this->fileUsage->add($file, 'ckeditor_templates', 'media', $file->id());
+          }
+        }
+      }
+      catch (InvalidPluginDefinitionException | PluginNotFoundException $e) {
+        $this->logger('templates')->critical($e->getMessage());
+      }
+
       $this->messenger()->addMessage($this->t('Saved the %label CKEditor Template.', [
         '%label' => $template->label(),
       ]));
