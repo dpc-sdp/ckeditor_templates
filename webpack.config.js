@@ -25,7 +25,7 @@ module.exports = [
       moduleIds: 'named'
     },
     entry: {
-      path: path.resolve(__dirname, 'js/plugin/src/app.js')
+      path: path.resolve(__dirname, 'js/ckeditor5_plugins/ckeditor_templates/src/app.js')
     },
     output: {
       path: path.resolve(__dirname, 'js/dist'),
@@ -41,17 +41,17 @@ module.exports = [
         name: 'CKEditor5.dll'
       }),
       new MiniCssExtractPlugin({
-        filename: '../../css/cke_templates.dialog.css'
+        filename: '../../css/cke5_templates.dialog.css'
       })
     ],
     module: {
       rules: [
         {
-          test: /js[/\\]plugin[/\\]theme[/\\]icons[/\\][^/\\]+\.svg$/,
+          test: /js[/\\]ckeditor5_plugins[/\\].*?[/\\]theme[/\\]icons[/\\][^/\\]+\.svg$/,
           use: ['raw-loader']
         },
         {
-          test: /js[/\\]plugin[/\\]theme[/\\][^/\\]+\.css$/,
+          test: /js[/\\]ckeditor5_plugins[/\\].*?[/\\]theme[/\\][^/\\]+\.css$/,
           use: [
             {
               loader: 'style-loader',

@@ -1,5 +1,5 @@
 import CKEditorTemplates from './ckeditorTemplates';
-import './../../../sass/dialog.scss';
+import './../sass/dialog.scss';
 
 export default {
   CKEditorTemplates

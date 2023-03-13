@@ -15,8 +15,8 @@ ckeditor_templates_plugin:
   drupal:
     label: Templates
     elements: false
-    library: ckeditor_templates/ckeditor.templates.dialog
-    admin_library: ckeditor_templates/ckeditor.templates.admin
+    library: ckeditor_templates/ckeditor5.templates.dialog
+    admin_library: ckeditor_templates/ckeditor5.templates.admin
     class: Drupal\ckeditor_templates\Plugin\CKEditor5Plugin\CKEditorTemplatesDialog
     toolbar_items:
       ckeditorTemplates:
