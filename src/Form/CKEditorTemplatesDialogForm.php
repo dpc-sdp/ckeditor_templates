@@ -154,7 +154,7 @@ class CKEditorTemplatesDialogForm extends FormBase {
     }
 
     if (empty($image)) {
-      $image = $this->moduleFolder . '/js/plugin/theme/images/placeholder.svg';
+      $image = $this->moduleFolder . '/js/ckeditor5_plugins/ckeditor_templates/theme/images/placeholder.svg';
     }
 
     return $image;
