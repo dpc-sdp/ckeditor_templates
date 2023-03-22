@@ -2,4 +2,5 @@ name: CKEditor Templates
 description: 'Integrates the CKEditor templates plugin.'
 package: CKEditor
 type: module
-core_version_requirement: ^8 || ^9 || ^10
+core: 8.x
+core_version_requirement: ^8 || ^9
