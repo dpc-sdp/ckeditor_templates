@@ -79,7 +79,7 @@ class CKEditorTemplatesDialogForm extends FormBase {
       $this->templates[$format->id()] = [
         'label' => $format->label(),
         'formats' => $format->get('formats') ?? [],
-        'thumb' => $this->getThumb($format->get('thumb')[0] ?? ''),
+        'thumb' => $this->getThumb($format->get('thumb')[0] ?? '', $format->get('thumb_alternative')),
         'description' => $format->get('description') ?? '',
         'code' => $format->get('code') ?? '',
       ];
@@ -124,13 +124,16 @@ class CKEditorTemplatesDialogForm extends FormBase {
    * @param string $thumb
    *   The thumb image id.
    *
+   * @param string $thumb_alternative
+   *   The alternative thumb image url.
+   *
    * @return string
    *   The thumb image URL.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  private function getThumb(string $thumb): string {
+  private function getThumb(string $thumb, string $thumb_alternative): string {
     $image = '';
 
     if (!empty($thumb)) {
@@ -154,7 +157,9 @@ class CKEditorTemplatesDialogForm extends FormBase {
     }
 
     if (empty($image)) {
-      $image = $this->moduleFolder . '/js/ckeditor5_plugins/ckeditor_templates/theme/images/placeholder.svg';
+      $image = empty($thumb_alternative)
+        ? $this->moduleFolder . '/js/ckeditor5_plugins/ckeditor_templates/theme/images/placeholder.svg'
+        : $thumb_alternative;
     }
 
     return $image;

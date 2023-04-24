@@ -107,7 +107,7 @@ class CKEditorTemplatesEntityForm extends EntityForm {
 
     $form['thumb'] = [
       '#type' => 'managed_file',
-      '#title' => $this->t('Illustration Image/Icon'),
+      '#title' => $this->t('Illustrative Image/Icon'),
       '#default_value' => $this->entity->get('thumb'),
       '#description' => $this->t('Allowed types: png jpeg jpg gif'),
       '#upload_location' => 'public://ckeditor-templates',
@@ -115,6 +115,15 @@ class CKEditorTemplatesEntityForm extends EntityForm {
         'file_validate_extensions' => ['gif png jpg jpeg'],
       ],
       '#cardinality' => 1,
+    ];
+
+    $form['thumb_alternative'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Alternative Image/Icon'),
+      '#maxlength' => 255,
+      '#default_value' => $this->entity->get('thumb_alternative'),
+      '#description' => $this->t('Use this field as an alternative to uploading an illustrative image/icon. You can provide a URL or path to an image file (i.e., //domain.com/icon.png, public://icon.png, /modules/my_module/icon.png, /themes/my_theme/icon.png, etc.).'),
+      '#required' => FALSE,
     ];
 
     $form['code'] = [

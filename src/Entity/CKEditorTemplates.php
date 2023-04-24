@@ -48,6 +48,7 @@ use Drupal\Core\Entity\EntityStorageInterface;
  *     "status",
  *     "description",
  *     "thumb",
+ *     "thumb_alternative",
  *     "code",
  *     "formats",
  *     "weight"
@@ -90,6 +91,13 @@ class CKEditorTemplates extends ConfigEntityBase implements CKEditorTemplatesInt
    * @var string
    */
   protected $thumb;
+
+  /**
+   * The template thumb_alternative.
+   *
+   * @var string
+   */
+  protected $thumb_alternative;
 
   /**
    * The template HTML code.
