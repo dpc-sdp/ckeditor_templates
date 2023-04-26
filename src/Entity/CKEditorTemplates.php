@@ -138,4 +138,12 @@ class CKEditorTemplates extends ConfigEntityBase implements CKEditorTemplatesInt
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function save() {
+    parent::save();
+    \Drupal::service('plugin.manager.ckeditor_template')->clearCachedDefinitions();
+  }
+
 }

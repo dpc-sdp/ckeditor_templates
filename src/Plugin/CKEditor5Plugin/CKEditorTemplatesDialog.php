@@ -56,11 +56,11 @@ class CKEditorTemplatesDialog extends CKEditor5PluginDefault implements CKEditor
    * {@inheritdoc}
    */
   public function getDynamicPluginConfig(array $static_plugin_config, EditorInterface $editor): array {
-    $dialogUrl = Url::fromRoute('ckeditor_templates.selector', [
-      'editor_id' => $editor->id(),
+    $dialog_url = Url::fromRoute('ckeditor_templates.selector', [
+      'editor' => $editor->id(),
     ])->toString();
 
-    $static_plugin_config['ckeditorTemplates']['dialogUrl'] = $dialogUrl;
+    $static_plugin_config['ckeditorTemplates']['dialogUrl'] = $dialog_url;
 
     return $static_plugin_config;
   }

@@ -2,16 +2,13 @@
 
 namespace Drupal\ckeditor_templates\Form;
 
-use Drupal\Core\Ajax\AjaxResponse;
-use Drupal\Core\Ajax\CloseModalDialogCommand;
-use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Form\FormBase;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\editor\EditorInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\editor\Ajax\EditorDialogSave;
-use Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException;
-use Drupal\Component\Plugin\Exception\PluginNotFoundException;
+use Drupal\Core\Ajax\CloseModalDialogCommand;
+use Drupal\Component\Plugin\PluginManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -20,25 +17,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class CKEditorTemplatesDialogForm extends FormBase {
 
   /**
-   * The entity type manager instance.
+   * The template plugin manager.
    *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   * @var PluginManagerInterface
    */
-  protected EntityTypeManagerInterface $entityTypeManager;
-
-  /**
-   * The file url generator instance.
-   *
-   * @var \Drupal\Core\File\FileUrlGeneratorInterface
-   */
-  protected FileUrlGeneratorInterface $fileUrlGenerator;
-
-  /**
-   * The path for the current module folder.
-   *
-   * @var string
-   */
-  protected string $moduleFolder;
+  protected $ckeditorTemplateManager;
 
   /**
    * The available templates.
@@ -47,6 +30,13 @@ class CKEditorTemplatesDialogForm extends FormBase {
    */
   protected array $templates;
 
+  /**
+   * Determines wheter the available templates need to beloaded.
+   *
+   * @var boolean
+   */
+  protected bool $templatesLoaded = FALSE;
+  
   /**
    * The AJAX wrapper id.
    *
@@ -57,33 +47,11 @@ class CKEditorTemplatesDialogForm extends FormBase {
   /**
    * Create a new dialog instance.
    *
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
-   *   The entity type manager instance.
-   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
-   *   The file url generator instance.
-   * @param \Drupal\Core\Extension\ModuleExtensionList $extension_list_module
-   *   The provider for a list of available modules.
-   *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, FileUrlGeneratorInterface $file_url_generator, ModuleExtensionList $extension_list_module) {
-    $this->entityTypeManager = $entity_type_manager;
-    $this->fileUrlGenerator = $file_url_generator;
-    $this->moduleFolder = '/' . $extension_list_module->getPath('ckeditor_templates');
-    $this->templates = [];
-
-    // Load the templates.
-    $templates = $this->getTemplates();
-    foreach ($templates as $format) {
-      $this->templates[$format->id()] = [
-        'label' => $format->label(),
-        'formats' => $format->get('formats') ?? [],
-        'thumb' => $this->getThumb($format->get('thumb')[0] ?? '', $format->get('thumb_alternative')),
-        'description' => $format->get('description') ?? '',
-        'code' => $format->get('code') ?? '',
-      ];
-    }
+  public function __construct(PluginManagerInterface $ckeditor_template_plugin_manager) {
+    $this->ckeditorTemplateManager = $ckeditor_template_plugin_manager;
   }
 
   /**
@@ -91,78 +59,8 @@ class CKEditorTemplatesDialogForm extends FormBase {
    */
   public static function create(ContainerInterface $container): CKEditorTemplatesDialogForm | static {
     return new static(
-      $container->get('entity_type.manager'),
-      $container->get('file_url_generator'),
-      $container->get('extension.list.module')
+      $container->get('plugin.manager.ckeditor_template')
     );
-  }
-
-  /**
-   * Loads the CKEditor Templates.
-   *
-   * @return \Drupal\Core\Entity\EntityInterface[]
-   *   A list of CKEditor Template entities.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   */
-  private function getTemplates(): array {
-    $storage = $this->entityTypeManager
-      ->getStorage('ckeditor_templates');
-
-    $nids = $storage->getQuery()
-      ->condition('status', 1)
-      ->sort('weight', 'ASC')
-      ->execute();
-
-    return $storage->loadMultiple($nids);
-  }
-
-  /**
-   * Gets the thumbnail for an image.
-   *
-   * @param string $thumb
-   *   The thumb image id.
-   *
-   * @param string $thumb_alternative
-   *   The alternative thumb image url.
-   *
-   * @return string
-   *   The thumb image URL.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
-   */
-  private function getThumb(string $thumb, string $thumb_alternative): string {
-    $image = '';
-
-    if (!empty($thumb)) {
-      $file = $this->entityTypeManager
-        ->getStorage('file')
-        ->load($thumb);
-
-      if (isset($file)) {
-        $fileUri = $file->getFileUri();
-
-        $style = $this->entityTypeManager
-          ->getStorage('image_style')
-          ->load('thumbnail');
-        if (isset($style)) {
-          $image = $style->buildUrl($fileUri) ?? '';
-        }
-        else {
-          $image = $this->fileUrlGenerator->generateAbsoluteString($fileUri) ?? '';
-        }
-      }
-    }
-
-    if (empty($image)) {
-      $image = empty($thumb_alternative)
-        ? $this->moduleFolder . '/js/ckeditor5_plugins/ckeditor_templates/theme/images/placeholder.svg'
-        : $thumb_alternative;
-    }
-
-    return $image;
   }
 
   /**
@@ -175,38 +73,28 @@ class CKEditorTemplatesDialogForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, string $editor_id = ''): array {
+  public function buildForm(array $form, FormStateInterface $form_state, EditorInterface $editor = NULL): array {
     $templates = [];
 
     // Gets the templates.
-    foreach ($this->templates as $key => $template) {
-      if (in_array($editor_id, $template['formats'])) {
+    foreach ($this->ckeditorTemplateManager->getTemplates() as $key => $template) {
+      if (in_array($editor->id(), $template->allowedFormats())) {
         $templates[$key] = '
-            <img src="' . $template['thumb'] . '" alt="' . $template['label'] . '" />
+            <img src="' . $template->getThumb() . '" alt="' . $template->label() . '" />
             <div>
-              <strong>' . $template['label'] . ' </strong>
-              <span>' . $template['description'] . '</span>
+              <strong>' . $template->label() . ' </strong>
+              <span>' . $template->getDescription() . '</span>
             </div>
           ';
       }
     }
 
-    // Gets the editor.
-    try {
-      $editor = $this->entityTypeManager
-        ->getStorage('editor')
-        ->load($editor_id);
-    }
-    catch (InvalidPluginDefinitionException | PluginNotFoundException $e) {
-      $this->logger('templates')->critical($e->getMessage());
-    }
-
     // Validate there are templates.
-    if (empty($templates) || !isset($editor)) {
+    if (empty($templates)) {
       $form['warning'] = [
         '#type' => 'markup',
         '#markup' => $this->t('There is no template available for the <strong>@formatLabel</strong> text format.', [
-          '@formatLabel' => $editor?->label() ?? $editor_id,
+          '@formatLabel' => $editor->label(),
         ]),
       ];
 
@@ -223,6 +111,9 @@ class CKEditorTemplatesDialogForm extends FormBase {
     $form['templates'] = [
       '#type' => 'radios',
       '#options' => $templates,
+      '#wrapper_attributes' => [
+        'class' => ['form-radios--templates'],
+      ],
     ];
 
     $settings = $editor->getSettings();
@@ -263,12 +154,12 @@ class CKEditorTemplatesDialogForm extends FormBase {
   public function ajaxSubmitForm(array &$form, FormStateInterface $form_state): AjaxResponse | array {
     $response = new AjaxResponse();
 
-    $template = $form_state->getValue('templates');
-    if (isset($template)) {
-      $htmlCode = $this->templates[$template]['code'] ?? '';
-      if (!empty($htmlCode)) {
+    $template_id = $form_state->getValue('templates');
+    if (isset($template_id)) {
+      $html_code = $this->ckeditorTemplateManager->createInstance($template_id)->getHtml();
+      if (!empty($html_code)) {
         $response->addCommand(new EditorDialogSave([
-          'htmlCode' => $htmlCode,
+          'htmlCode' => $html_code,
           'replace' => $form_state->getValue('replace_content'),
         ]));
       }

@@ -1,9 +1,12 @@
 ckeditor_templates.selector:
-  path: '/admin/config/content/ckeditor-templates/template-selector/{editor_id}'
+  path: '/admin/config/content/ckeditor-templates/template-selector/{editor}'
   defaults:
     _form: '\Drupal\ckeditor_templates\Form\CKEditorTemplatesDialogForm'
   requirements:
     _permission: 'use text format advanced'
+  parameters:
+    editor:
+      type: entity:editor
 
 entity.ckeditor_templates.collection:
   path: '/admin/config/content/ckeditor-templates'
