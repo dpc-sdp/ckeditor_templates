@@ -25,7 +25,7 @@ interface CkeditorTemplateInterface {
 
   /**
    * Gets the thumbnail for an image.
-   * 
+   *
    * @return string
    *   The thumb image URL.
    */

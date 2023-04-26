@@ -36,7 +36,7 @@ class CKEditorTemplatesDialogForm extends FormBase {
    * @var boolean
    */
   protected bool $templatesLoaded = FALSE;
-  
+
   /**
    * The AJAX wrapper id.
    *
