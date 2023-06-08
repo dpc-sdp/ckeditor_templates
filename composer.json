@@ -1,5 +1,5 @@
 {
-    "name": "dpc-sdp/ckeditor_templates",
+    "name": "drupal/ckeditor_templates",
     "description": "Integrates the CKEditor templates plugin.",
     "type": "drupal-module",
     "license": "GPL-2.0-or-later"
